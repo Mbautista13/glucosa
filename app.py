@@ -1,9 +1,9 @@
 from flask import Flask, render_template, request
-import json
 import numpy as np
 
 app = Flask(__name__)
 
+# Lagrange Interpolation
 def lagrange(x, y, xi):
     yi = 0
     n = len(x)
@@ -15,11 +15,17 @@ def lagrange(x, y, xi):
         yi += y[i] * L
     return yi
 
+# Linear Regression
 def regresion(x, y):
     n = len(x)
-    m = (n*np.sum(x*y) - np.sum(x)*np.sum(y)) / (n*np.sum(x**2) - (np.sum(x))**2)
-    b = (np.sum(y) - m*np.sum(x)) / n
+    m = (n * np.sum(x * y) - np.sum(x) * np.sum(y)) / (n * np.sum(x ** 2) - (np.sum(x)) ** 2)
+    b = (np.sum(y) - m * np.sum(x)) / n
     return m, b
+
+# Convierte hora tipo 'HH:MM' a decimal (ej. '14:30' → 14.5)
+def hora_a_decimal(hora_str):
+    partes = hora_str.split(':')
+    return int(partes[0]) + int(partes[1]) / 60
 
 @app.route('/')
 def index():
@@ -27,36 +33,32 @@ def index():
 
 @app.route('/resultados', methods=['POST'])
 def resultados():
-    # Leer datos del JSON
-    with open('input_data.json') as f:
-        data = json.load(f)
-
-    x = np.array(data['horas'])
-    y = np.array(data['glucosas'])
-
-    # Obtener datos del formulario y convertir a float
     try:
-        xi = float(request.form['hora_interp'])
-        xp = float(request.form['hora_pred'])
-    except:
-        return "Por favor ingresa valores numéricos válidos."
+        # Obtener horas y glucosas como listas
+        horas_str = request.form.getlist('hora[]')
+        glucosas_str = request.form.getlist('glucosa[]')
 
-    # Calcular interpolado y predicho
-    interpolado = lagrange(x, y, xi)
-    m, b = regresion(x, y)
-    predicho = m * xp + b
+        # Convertir a float
+        x = np.array([hora_a_decimal(h) for h in horas_str])
+        y = np.array([float(g) for g in glucosas_str])
 
-    # Opcional: redondear para mostrar
-    interpolado = round(interpolado, 2)
-    predicho = round(predicho, 2)
+        # Hora a interpolar y predecir
+        xi = hora_a_decimal(request.form['hora_interp'])
+        xp = hora_a_decimal(request.form['hora_pred'])
 
-    # Renderizar resultados con etiquetas personalizadas
-    return render_template('resultados.html', 
-        hora_interp=xi, 
-        hora_pred=xp,
-        estimado=interpolado,
-        prediccion=predicho
-    )
+        # Calcular
+        interpolado = round(lagrange(x, y, xi), 2)
+        m, b = regresion(x, y)
+        prediccion = round(m * xp + b, 2)
+
+        return render_template('resultados.html',
+                               hora_interp=request.form['hora_interp'],
+                               hora_pred=request.form['hora_pred'],
+                               estimado=interpolado,
+                               prediccion=prediccion)
+    except Exception as e:
+        return f"Ocurrió un error: {e}"
 
 if __name__ == '__main__':
     app.run(debug=True)
+
