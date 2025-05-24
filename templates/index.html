@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Predicción de Glucosa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            padding: 40px;
+        }
+        .container {
+            max-width: 700px;
+            background-color: #fff;
+            margin: auto;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            display: inline-block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+        input[type="time"], input[type="number"] {
+            padding: 8px;
+            width: 120px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+            border-radius: 6px;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .bloque-datos {
+            margin-bottom: 20px;
+        }
+        .explicacion {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .dato-extra {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Predicción de Glucosa</h1>
+
+        <p class="explicacion">
+            Ingresa al menos 3 mediciones de glucosa junto con la hora en que se tomaron 
+            (por ejemplo: <strong>06:00</strong>, <strong>08:30</strong>, <strong>10:00</strong>).<br>
+            Luego, indica una hora para estimar el valor <strong>(interpolación)</strong> y otra futura para 
+            <strong>predecir la tendencia</strong>.
+        </p>
+
+        <form action="/procesar" method="post">
+            <div id="datos" class="bloque-datos">
+                <div>
+                    <label>Hora:</label>
+                    <input type="time" name="hora[]" required>
+                    <label>Glucosa:</label>
+                    <input type="number" step="1" name="glucosa[]" required>
+                </div>
+            </div>
+            <button type="button" class="btn" onclick="agregarCampo()">Agregar otra medición</button>
+
+            <div class="dato-extra">
+                <label>Hora para interpolar:</label><br>
+                <input type="time" name="hora_interp" required>
+            </div>
+
+            <div class="dato-extra">
+                <label>Hora para predecir:</label><br>
+                <input type="time" name="hora_pred" required>
+            </div>
+
+            <br>
+            <input type="submit" class="btn" value="Procesar">
+        </form>
+    </div>
+
+    <script>
+        function agregarCampo() {
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <label>Hora:</label>
+                <input type="time" name="hora[]" required>
+                <label>Glucosa:</label>
+                <input type="number" step="1" name="glucosa[]" required>
+            `;
+            document.getElementById('datos').appendChild(div);
+        }
+    </script>
+</body>
+</html>
