@@ -1,80 +1,66 @@
 from flask import Flask, render_template, request
-import json
 import numpy as np
+from datetime import datetime
 
 app = Flask(__name__)
 
-# Función para convertir 'HH:MM' a decimal
+# Convierte hora "HH:MM" a decimal, ej: "13:30" -> 13.5
 def hora_a_decimal(hora_str):
-    horas, minutos = map(int, hora_str.split(':'))
-    return horas + minutos / 60
+    hora = datetime.strptime(hora_str, "%H:%M")
+    return hora.hour + hora.minute / 60
 
-# Interpolación de Lagrange
-def lagrange(x, y, xi):
-    yi = 0
-    n = len(x)
-    for i in range(n):
-        L = 1
-        for j in range(n):
-            if i != j:
-                L *= (xi - x[j]) / (x[i] - x[j])
-        yi += y[i] * L
-    return yi
-
-# Regresión lineal
-def regresion(x, y):
-    n = len(x)
-    m = (n*np.sum(x*y) - np.sum(x)*np.sum(y)) / (n*np.sum(x**2) - (np.sum(x))**2)
-    b = (np.sum(y) - m*np.sum(x)) / n
-    return m, b
-
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/resultados', methods=['POST'])
-def resultados():
+@app.route("/procesar", methods=["POST"])
+def procesar():
+    # Obtén listas de horas y glucosas del formulario
+    horas_str = request.form.getlist("hora[]")
+    glucosa_str = request.form.getlist("glucosa[]")
+
+    # Validar que tengamos al menos 3 mediciones
+    if len(horas_str) < 3 or len(glucosa_str) < 3:
+        return "Error: Debes ingresar al menos 3 mediciones.", 400
+
+    # Convertir glucosa a float
     try:
-        # Obtener las horas y valores de glucosa del formulario
-        horas_str = request.form.getlist('hora[]')
-        glucosas_str = request.form.getlist('glucosa[]')
+        glucosa = [float(g) for g in glucosa_str]
+    except ValueError:
+        return "Error: Valores de glucosa inválidos.", 400
 
-        # Convertir a formato numérico
-        horas = [hora_a_decimal(h) for h in horas_str]
-        glucosas = [float(g) for g in glucosas_str]
+    # Convertir horas a decimales
+    horas_dec = [hora_a_decimal(h) for h in horas_str]
 
-        # Guardar los datos en un JSON
-        with open('input_data.json', 'w') as f:
-            json.dump({'horas': horas, 'glucosas': glucosas}, f)
+    # Datos para la interpolación y predicción
+    hora_interp_str = request.form.get("hora_interp")
+    hora_pred_str = request.form.get("hora_pred")
 
-        # Obtener horas para interpolar y predecir
-        hora_interp_str = request.form['hora_interp']
-        hora_pred_str = request.form['hora_pred']
-        xi = hora_a_decimal(hora_interp_str)
-        xp = hora_a_decimal(hora_pred_str)
+    # Validar horas para interpolar y predecir
+    if not hora_interp_str or not hora_pred_str:
+        return "Error: Debes ingresar las horas para interpolar y predecir.", 400
 
-        # Convertir a arrays NumPy
-        x = np.array(horas)
-        y = np.array(glucosas)
+    hora_interp_dec = hora_a_decimal(hora_interp_str)
+    hora_pred_dec = hora_a_decimal(hora_pred_str)
 
-        # Calcular interpolado y predicho
-        interpolado = lagrange(x, y, xi)
-        m, b = regresion(x, y)
-        predicho = m * xp + b
+    # Interpolación lineal
+    estimado = float(np.interp(hora_interp_dec, horas_dec, glucosa))
 
-        # Redondear
-        interpolado = round(interpolado, 2)
-        predicho = round(predicho, 2)
+    # Predicción por regresión lineal (polinomio grado 1)
+    coef = np.polyfit(horas_dec, glucosa, 1)
+    m, b = coef
+    prediccion = float(m * hora_pred_dec + b)
 
-        return render_template('resultados.html',
-            hora_interp=hora_interp_str,
-            hora_pred=hora_pred_str,
-            interpolado=interpolado,
-            predicho=predicho
-        )
-    
-    except Exception as e:
-        return f"Ocurrió un error: {str(e)}"
+    # Redondear resultados a 2 decimales
+    estimado = round(estimado, 2)
+    prediccion = round(prediccion, 2)
 
-if __name__ == '__main__':
+    # Renderizar template con resultados
+    return render_template("resultados.html",
+                           estimado=estimado,
+                           prediccion=prediccion,
+                           hora_interp=hora_interp_str,
+                           hora_pred=hora_pred_str)
+
+if __name__ == "__main__":
     app.run(debug=True)
