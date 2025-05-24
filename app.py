@@ -1,9 +1,15 @@
 from flask import Flask, render_template, request
+import json
 import numpy as np
 
 app = Flask(__name__)
 
-# Lagrange Interpolation
+# Función para convertir 'HH:MM' a decimal
+def hora_a_decimal(hora_str):
+    horas, minutos = map(int, hora_str.split(':'))
+    return horas + minutos / 60
+
+# Interpolación de Lagrange
 def lagrange(x, y, xi):
     yi = 0
     n = len(x)
@@ -15,17 +21,12 @@ def lagrange(x, y, xi):
         yi += y[i] * L
     return yi
 
-# Linear Regression
+# Regresión lineal
 def regresion(x, y):
     n = len(x)
-    m = (n * np.sum(x * y) - np.sum(x) * np.sum(y)) / (n * np.sum(x ** 2) - (np.sum(x)) ** 2)
-    b = (np.sum(y) - m * np.sum(x)) / n
+    m = (n*np.sum(x*y) - np.sum(x)*np.sum(y)) / (n*np.sum(x**2) - (np.sum(x))**2)
+    b = (np.sum(y) - m*np.sum(x)) / n
     return m, b
-
-# Convierte hora tipo 'HH:MM' a decimal (ej. '14:30' → 14.5)
-def hora_a_decimal(hora_str):
-    partes = hora_str.split(':')
-    return int(partes[0]) + int(partes[1]) / 60
 
 @app.route('/')
 def index():
@@ -34,31 +35,46 @@ def index():
 @app.route('/resultados', methods=['POST'])
 def resultados():
     try:
-        # Obtener horas y glucosas como listas
+        # Obtener las horas y valores de glucosa del formulario
         horas_str = request.form.getlist('hora[]')
         glucosas_str = request.form.getlist('glucosa[]')
 
-        # Convertir a float
-        x = np.array([hora_a_decimal(h) for h in horas_str])
-        y = np.array([float(g) for g in glucosas_str])
+        # Convertir a formato numérico
+        horas = [hora_a_decimal(h) for h in horas_str]
+        glucosas = [float(g) for g in glucosas_str]
 
-        # Hora a interpolar y predecir
-        xi = hora_a_decimal(request.form['hora_interp'])
-        xp = hora_a_decimal(request.form['hora_pred'])
+        # Guardar los datos en un JSON
+        with open('input_data.json', 'w') as f:
+            json.dump({'horas': horas, 'glucosas': glucosas}, f)
 
-        # Calcular
-        interpolado = round(lagrange(x, y, xi), 2)
+        # Obtener horas para interpolar y predecir
+        hora_interp_str = request.form['hora_interp']
+        hora_pred_str = request.form['hora_pred']
+        xi = hora_a_decimal(hora_interp_str)
+        xp = hora_a_decimal(hora_pred_str)
+
+        # Convertir a arrays NumPy
+        x = np.array(horas)
+        y = np.array(glucosas)
+
+        # Calcular interpolado y predicho
+        interpolado = lagrange(x, y, xi)
         m, b = regresion(x, y)
-        prediccion = round(m * xp + b, 2)
+        predicho = m * xp + b
+
+        # Redondear
+        interpolado = round(interpolado, 2)
+        predicho = round(predicho, 2)
 
         return render_template('resultados.html',
-                               hora_interp=request.form['hora_interp'],
-                               hora_pred=request.form['hora_pred'],
-                               estimado=interpolado,
-                               prediccion=prediccion)
+            hora_interp=hora_interp_str,
+            hora_pred=hora_pred_str,
+            interpolado=interpolado,
+            predicho=predicho
+        )
+    
     except Exception as e:
-        return f"Ocurrió un error: {e}"
+        return f"Ocurrió un error: {str(e)}"
 
 if __name__ == '__main__':
     app.run(debug=True)
-
