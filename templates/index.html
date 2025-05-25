@@ -61,18 +61,13 @@
         .bloque-datos {
             margin-bottom: 20px;
         }
-        .explicacion {
+        .explicacion, .nota {
             font-size: 14px;
             color: #555;
             margin-bottom: 20px;
         }
         .dato-extra {
             margin-top: 15px;
-        }
-        .error {
-            color: red;
-            margin-top: 10px;
-            font-weight: bold;
         }
     </style>
 </head>
@@ -83,11 +78,14 @@
         <p class="explicacion">
             Ingresa al menos 3 mediciones de glucosa junto con la hora en que se tomaron 
             (por ejemplo: <strong>06:00</strong>, <strong>08:30</strong>, <strong>10:00</strong>).<br>
-            Luego, puedes indicar una hora para estimar el valor y/o otra futura para 
-            predecir la tendencia. Ambos campos son opcionales.
+            Luego, selecciona al menos una de las dos opciones: <strong>hora para estimar</strong> o <strong>hora para predecir</strong>.
         </p>
 
-        <form action="/procesar" method="post" onsubmit="return validarMinimo();">
+        <p class="nota">
+            Ten en cuenta que la glucosa en sangre depende de muchos factores como actividad física, alimentación y características personales. Esta aplicación está diseñada para usuarios que llevan un control regular. Los resultados reflejan una <strong>estimación</strong> basada en la tendencia y registros previos, pero no son 100% exactos ni sustituyen el monitoreo médico profesional.
+        </p>
+
+        <form action="/procesar" method="post" id="form-prediccion">
             <div id="datos" class="bloque-datos">
                 <div class="medicion">
                     <label>Hora:</label>
@@ -113,16 +111,12 @@
 
             <div class="dato-extra">
                 <label>Hora para estimar (opcional):</label><br>
-                <input type="time" name="hora_interp">
+                <input type="time" name="hora_interp" id="hora_interp">
             </div>
 
             <div class="dato-extra">
                 <label>Hora para predecir (opcional):</label><br>
-                <input type="time" name="hora_pred">
-            </div>
-
-            <div id="mensaje-error" class="error" style="display: none;">
-                Debes ingresar al menos 3 mediciones de glucosa.
+                <input type="time" name="hora_pred" id="hora_pred">
             </div>
 
             <br>
@@ -144,20 +138,25 @@
             document.getElementById('datos').appendChild(div);
         }
 
-        function validarMinimo() {
+        // Validar mínimo 3 mediciones y que se seleccione al menos una hora para estimar o predecir
+        document.getElementById('form-prediccion').addEventListener('submit', function(event) {
             const horas = document.getElementsByName('hora[]');
             const glucosas = document.getElementsByName('glucosa[]');
-            const mensaje = document.getElementById('mensaje-error');
+            const horaInterp = document.getElementById('hora_interp').value;
+            const horaPred = document.getElementById('hora_pred').value;
 
             if (horas.length < 3 || glucosas.length < 3) {
-                mensaje.style.display = 'block';
-                return false;
+                alert('Debes ingresar al menos 3 mediciones de glucosa.');
+                event.preventDefault();
+                return;
             }
 
-            mensaje.style.display = 'none';
-            return true;
-        }
+            if (!horaInterp && !horaPred) {
+                alert('Debes ingresar al menos una hora para estimar o para predecir.');
+                event.preventDefault();
+                return;
+            }
+        });
     </script>
 </body>
 </html>
-
