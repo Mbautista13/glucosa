@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request
-import subprocess
-import json
 import logging
+import numpy as np
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -10,7 +9,6 @@ def hhmm_a_decimal(hora_str):
     try:
         partes = hora_str.split(':')
         if len(partes) == 1:
-            # Si sólo ingresó hora sin minutos
             horas = int(partes[0])
             minutos = 0
         elif len(partes) == 2:
@@ -28,6 +26,25 @@ def decimal_a_hhmm(hora_decimal):
     horas = int(hora_decimal)
     minutos = round((hora_decimal - horas) * 60)
     return f"{horas:02d}:{minutos:02d}"
+
+def lagrange(x, y, xi):
+    n = len(x)
+    yi = 0
+    for i in range(n):
+        L = 1
+        for j in range(n):
+            if i != j:
+                L *= (xi - x[j]) / (x[i] - x[j])
+        yi += y[i] * L
+    return yi
+
+def regresion(x, y):
+    x = np.array(x)
+    y = np.array(y)
+    n = len(x)
+    m = (n * np.sum(x * y) - np.sum(x) * np.sum(y)) / (n * np.sum(x**2) - (np.sum(x))**2)
+    b = (np.sum(y) - m * np.sum(x)) / n
+    return m, b
 
 @app.route('/')
 def index():
@@ -52,38 +69,18 @@ def procesar():
             hora_interp = hhmm_a_decimal(hora_interp_str)
             hora_pred = hhmm_a_decimal(hora_pred_str)
         except ValueError as e:
-            return f"Todos los datos deben ser numéricos y en formato válido: {str(e)}"
+            return f"Datos inválidos: {str(e)}"
 
-        data = {
-            "horas": horas,
-            "glucosas": glucosas,
-            "hora_interp": hora_interp,
-            "hora_pred": hora_pred
-        }
+        yi = lagrange(horas, glucosas, hora_interp)
+        m, b = regresion(horas, glucosas)
+        yp = m * hora_pred + b
 
-        with open("input_data.json", "w") as f:
-            json.dump(data, f)
-
-        resultado = subprocess.run(
-            ["octave", "--silent", "scripts/main.m"],
-            capture_output=True,
-            text=True
-        )
-
-        if resultado.returncode != 0:
-            return f"Error al ejecutar Octave: {resultado.stderr}"
-
-        lineas = resultado.stdout.strip().split("\n")
-        interpolado = lineas[0].split(":")[-1].strip()
-        predicho = lineas[1].split(":")[-1].strip()
-
-        # Convertir horas decimales a formato HH:MM para mostrar bonito
         hora_interp_formato = decimal_a_hhmm(hora_interp)
         hora_pred_formato = decimal_a_hhmm(hora_pred)
 
         return render_template("resultado.html",
-                               interpolado=interpolado,
-                               predicho=predicho,
+                               interpolado=yi,
+                               predicho=yp,
                                hora_interp=hora_interp_formato,
                                hora_pred=hora_pred_formato)
 
