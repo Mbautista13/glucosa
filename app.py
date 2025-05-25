@@ -8,14 +8,8 @@ logging.basicConfig(level=logging.INFO)
 def hhmm_a_decimal(hora_str):
     try:
         partes = hora_str.split(':')
-        if len(partes) == 1:
-            horas = int(partes[0])
-            minutos = 0
-        elif len(partes) == 2:
-            horas = int(partes[0])
-            minutos = int(partes[1])
-        else:
-            raise ValueError("Formato de hora inválido")
+        horas = int(partes[0])
+        minutos = int(partes[1])
         if not (0 <= horas < 24 and 0 <= minutos < 60):
             raise ValueError("Hora o minutos fuera de rango")
         return horas + minutos / 60
@@ -55,34 +49,36 @@ def procesar():
     try:
         horas_str = request.form.getlist('hora[]')
         glucosas = request.form.getlist('glucosa[]')
-        hora_interp_str = request.form['hora_interp']
-        hora_pred_str = request.form['hora_pred']
+        hora_interp_str = request.form.get('hora_interp')
+        hora_pred_str = request.form.get('hora_pred')
 
         if len(horas_str) < 3 or len(glucosas) < 3:
             return "Debes ingresar al menos 3 puntos de glucosa."
-        if not hora_interp_str or not hora_pred_str:
-            return "Las horas de interpolación y predicción son obligatorias."
 
-        try:
-            horas = [hhmm_a_decimal(h) for h in horas_str]
-            glucosas = [float(g) for g in glucosas]
+        horas = [hhmm_a_decimal(h) for h in horas_str]
+        glucosas = [float(g) for g in glucosas]
+
+        resultado_interp = None
+        resultado_pred = None
+        hora_interp_fmt = None
+        hora_pred_fmt = None
+
+        if hora_interp_str:
             hora_interp = hhmm_a_decimal(hora_interp_str)
+            resultado_interp = lagrange(horas, glucosas, hora_interp)
+            hora_interp_fmt = decimal_a_hhmm(hora_interp)
+
+        if hora_pred_str:
             hora_pred = hhmm_a_decimal(hora_pred_str)
-        except ValueError as e:
-            return f"Datos inválidos: {str(e)}"
-
-        yi = lagrange(horas, glucosas, hora_interp)
-        m, b = regresion(horas, glucosas)
-        yp = m * hora_pred + b
-
-        hora_interp_formato = decimal_a_hhmm(hora_interp)
-        hora_pred_formato = decimal_a_hhmm(hora_pred)
+            m, b = regresion(horas, glucosas)
+            resultado_pred = m * hora_pred + b
+            hora_pred_fmt = decimal_a_hhmm(hora_pred)
 
         return render_template("resultado.html",
-                               interpolado=yi,
-                               predicho=yp,
-                               hora_interp=hora_interp_formato,
-                               hora_pred=hora_pred_formato)
+                               interpolado=round(resultado_interp, 2) if resultado_interp is not None else None,
+                               predicho=round(resultado_pred, 2) if resultado_pred is not None else None,
+                               hora_interp=hora_interp_fmt,
+                               hora_pred=hora_pred_fmt)
 
     except Exception as e:
         logging.error(f"Error inesperado: {str(e)}")
