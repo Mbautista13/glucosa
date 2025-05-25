@@ -21,6 +21,11 @@
             text-align: center;
             color: #333;
         }
+        .explicacion {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
         .resultado {
             background-color: #e6ffe6;
             padding: 15px 20px;
@@ -48,15 +53,26 @@
     <div class="card">
         <h1>Resultados Obtenidos</h1>
 
+        <p class="explicacion">
+            Esta aplicación realiza un análisis de tendencia con base en tus registros anteriores de glucosa. 
+            Usa técnicas matemáticas de interpolación (para estimar un valor dentro del rango registrado) y regresión lineal (para predecir un valor futuro).
+            Ten en cuenta que es una predicción aproximada que no sustituye un control médico.
+        </p>
+
         <div class="resultado">
-            <p>
-                <span class="label">Estimado (hora {{ hora_interp }}):</span>
-                {{ interpolado }}
-            </p>
-            <p>
-                <span class="label">Predicción (hora {{ hora_pred }}):</span>
-                {{ predicho }}
-            </p>
+            {% if interpolado is not none %}
+                <p>
+                    <span class="label">Estimación para la hora {{ hora_interp }}:</span>
+                    {{ interpolado }}
+                </p>
+            {% endif %}
+
+            {% if predicho is not none %}
+                <p>
+                    <span class="label">Predicción para la hora {{ hora_pred }}:</span>
+                    {{ predicho }}
+                </p>
+            {% endif %}
         </div>
 
         <div class="volver">
