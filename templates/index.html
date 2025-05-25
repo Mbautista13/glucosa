@@ -56,6 +56,21 @@
         .dato-extra {
             margin-top: 15px;
         }
+        .medicion {
+            margin-bottom: 10px;
+        }
+        .quitar-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .quitar-btn:hover {
+            background-color: #c0392b;
+        }
     </style>
 </head>
 <body>
@@ -65,13 +80,13 @@
         <p class="explicacion">
             Ingresa al menos 3 mediciones de glucosa junto con la hora en que se tomaron 
             (por ejemplo: <strong>06:00</strong>, <strong>08:30</strong>, <strong>10:00</strong>).<br>
-            Luego, indica una hora para estimar el valor <strong>(interpolación)</strong> y otra futura para 
+            Luego, indica una hora para <strong>estimar un valor</strong> y otra futura para 
             <strong>predecir la tendencia</strong>.
         </p>
 
         <form action="/procesar" method="post">
             <div id="datos" class="bloque-datos">
-                <div>
+                <div class="medicion">
                     <label>Hora:</label>
                     <input type="time" name="hora[]" required>
                     <label>Glucosa:</label>
@@ -81,7 +96,7 @@
             <button type="button" class="btn" onclick="agregarCampo()">Agregar otra medición</button>
 
             <div class="dato-extra">
-                <label>Hora para interpolar:</label><br>
+                <label>Hora para estimar:</label><br>
                 <input type="time" name="hora_interp" required>
             </div>
 
@@ -98,11 +113,13 @@
     <script>
         function agregarCampo() {
             const div = document.createElement('div');
+            div.className = 'medicion';
             div.innerHTML = `
                 <label>Hora:</label>
                 <input type="time" name="hora[]" required>
                 <label>Glucosa:</label>
                 <input type="number" step="1" name="glucosa[]" required>
+                <button type="button" class="quitar-btn" onclick="this.parentElement.remove()">Quitar</button>
             `;
             document.getElementById('datos').appendChild(div);
         }
