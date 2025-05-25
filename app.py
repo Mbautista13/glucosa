@@ -1,66 +1,95 @@
 from flask import Flask, render_template, request
-import numpy as np
-from datetime import datetime
+import subprocess
+import json
+import logging
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
-# Convierte hora "HH:MM" a decimal, ej: "13:30" -> 13.5
-def hora_a_decimal(hora_str):
-    hora = datetime.strptime(hora_str, "%H:%M")
-    return hora.hour + hora.minute / 60
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-@app.route("/procesar", methods=["POST"])
-def procesar():
-    # Obtén listas de horas y glucosas del formulario
-    horas_str = request.form.getlist("hora[]")
-    glucosa_str = request.form.getlist("glucosa[]")
-
-    # Validar que tengamos al menos 3 mediciones
-    if len(horas_str) < 3 or len(glucosa_str) < 3:
-        return "Error: Debes ingresar al menos 3 mediciones.", 400
-
-    # Convertir glucosa a float
+def hhmm_a_decimal(hora_str):
     try:
-        glucosa = [float(g) for g in glucosa_str]
-    except ValueError:
-        return "Error: Valores de glucosa inválidos.", 400
+        partes = hora_str.split(':')
+        if len(partes) == 1:
+            # Si sólo ingresó hora sin minutos
+            horas = int(partes[0])
+            minutos = 0
+        elif len(partes) == 2:
+            horas = int(partes[0])
+            minutos = int(partes[1])
+        else:
+            raise ValueError("Formato de hora inválido")
+        if not (0 <= horas < 24 and 0 <= minutos < 60):
+            raise ValueError("Hora o minutos fuera de rango")
+        return horas + minutos / 60
+    except Exception as e:
+        raise ValueError(f"Error al convertir hora '{hora_str}': {str(e)}")
 
-    # Convertir horas a decimales
-    horas_dec = [hora_a_decimal(h) for h in horas_str]
+def decimal_a_hhmm(hora_decimal):
+    horas = int(hora_decimal)
+    minutos = round((hora_decimal - horas) * 60)
+    return f"{horas:02d}:{minutos:02d}"
 
-    # Datos para la interpolación y predicción
-    hora_interp_str = request.form.get("hora_interp")
-    hora_pred_str = request.form.get("hora_pred")
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-    # Validar horas para interpolar y predecir
-    if not hora_interp_str or not hora_pred_str:
-        return "Error: Debes ingresar las horas para interpolar y predecir.", 400
+@app.route('/procesar', methods=['POST'])
+def procesar():
+    try:
+        horas_str = request.form.getlist('hora[]')
+        glucosas = request.form.getlist('glucosa[]')
+        hora_interp_str = request.form['hora_interp']
+        hora_pred_str = request.form['hora_pred']
 
-    hora_interp_dec = hora_a_decimal(hora_interp_str)
-    hora_pred_dec = hora_a_decimal(hora_pred_str)
+        if len(horas_str) < 3 or len(glucosas) < 3:
+            return "Debes ingresar al menos 3 puntos de glucosa."
+        if not hora_interp_str or not hora_pred_str:
+            return "Las horas de interpolación y predicción son obligatorias."
 
-    # Interpolación lineal
-    estimado = float(np.interp(hora_interp_dec, horas_dec, glucosa))
+        try:
+            horas = [hhmm_a_decimal(h) for h in horas_str]
+            glucosas = [float(g) for g in glucosas]
+            hora_interp = hhmm_a_decimal(hora_interp_str)
+            hora_pred = hhmm_a_decimal(hora_pred_str)
+        except ValueError as e:
+            return f"Todos los datos deben ser numéricos y en formato válido: {str(e)}"
 
-    # Predicción por regresión lineal (polinomio grado 1)
-    coef = np.polyfit(horas_dec, glucosa, 1)
-    m, b = coef
-    prediccion = float(m * hora_pred_dec + b)
+        data = {
+            "horas": horas,
+            "glucosas": glucosas,
+            "hora_interp": hora_interp,
+            "hora_pred": hora_pred
+        }
 
-    # Redondear resultados a 2 decimales
-    estimado = round(estimado, 2)
-    prediccion = round(prediccion, 2)
+        with open("input_data.json", "w") as f:
+            json.dump(data, f)
 
-    # Renderizar template con resultados
-    return render_template("resultados.html",
-                           estimado=estimado,
-                           prediccion=prediccion,
-                           hora_interp=hora_interp_str,
-                           hora_pred=hora_pred_str)
+        resultado = subprocess.run(
+            ["octave", "--silent", "scripts/main.m"],
+            capture_output=True,
+            text=True
+        )
 
-if __name__ == "__main__":
+        if resultado.returncode != 0:
+            return f"Error al ejecutar Octave: {resultado.stderr}"
+
+        lineas = resultado.stdout.strip().split("\n")
+        interpolado = lineas[0].split(":")[-1].strip()
+        predicho = lineas[1].split(":")[-1].strip()
+
+        # Convertir horas decimales a formato HH:MM para mostrar bonito
+        hora_interp_formato = decimal_a_hhmm(hora_interp)
+        hora_pred_formato = decimal_a_hhmm(hora_pred)
+
+        return render_template("resultado.html",
+                               interpolado=interpolado,
+                               predicho=predicho,
+                               hora_interp=hora_interp_formato,
+                               hora_pred=hora_pred_formato)
+
+    except Exception as e:
+        logging.error(f"Error inesperado: {str(e)}")
+        return f"Ocurrió un error: {str(e)}"
+
+if __name__ == '__main__':
     app.run(debug=True)
