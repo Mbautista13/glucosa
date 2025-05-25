@@ -33,14 +33,12 @@
         }
         .volver {
             margin-top: 30px;
-            display: block;
             text-align: center;
         }
         .volver a {
             text-decoration: none;
             color: #3498db;
             font-weight: bold;
-            font-size: 1.1em;
         }
     </style>
 </head>
@@ -49,14 +47,21 @@
         <h1>Resultados Obtenidos</h1>
 
         <div class="resultado">
+            {% if interpolado is not none %}
             <p>
-                <span class="label">Estimado (hora {{ hora_interp }}):</span>
-                {{ interpolado }}
+                <span class="label">Estimado ({{ hora_interp }}):</span>
+                {{ interpolado }} mg/dL
             </p>
+            {% endif %}
+            {% if predicho is not none %}
             <p>
-                <span class="label">Predicción (hora {{ hora_pred }}):</span>
-                {{ predicho }}
+                <span class="label">Predicción ({{ hora_pred }}):</span>
+                {{ predicho }} mg/dL
             </p>
+            {% endif %}
+            {% if interpolado is none and predicho is none %}
+            <p>No se solicitó estimación ni predicción.</p>
+            {% endif %}
         </div>
 
         <div class="volver">
