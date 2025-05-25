@@ -2,71 +2,66 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Resultados - Predicción de Glucosa</title>
+    <title>Resultados de Predicción</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
-            padding: 40px;
-        }
-        .container {
-            max-width: 700px;
-            background-color: #fff;
-            margin: auto;
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            background-color: #f4f4f4;
         }
-        h1, h2 {
+        .card {
+            background-color: #fff;
+            padding: 20px 30px;
+            margin: auto;
+            width: 60%;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
             text-align: center;
             color: #333;
         }
         .resultado {
-            font-size: 16px;
-            color: #444;
-            margin: 20px 0;
-            line-height: 1.6;
+            background-color: #e6ffe6;
+            padding: 15px 20px;
+            margin-top: 20px;
+            border-left: 5px solid #2ecc71;
+            font-size: 1.1em;
         }
-        .btn-volver {
+        .label {
+            font-weight: bold;
+        }
+        .volver {
+            margin-top: 30px;
             display: block;
-            width: fit-content;
-            margin: 30px auto 0;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 14px;
-            cursor: pointer;
-            border-radius: 6px;
+            text-align: center;
+        }
+        .volver a {
             text-decoration: none;
-            text-align: center;
-        }
-        .btn-volver:hover {
-            background-color: #2980b9;
-        }
-        .explicacion {
-            font-size: 14px;
-            color: #555;
-            margin-top: 15px;
-            text-align: center;
+            color: #3498db;
+            font-weight: bold;
+            font-size: 1.1em;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Resultados</h1>
+    <div class="card">
+        <h1>Resultados Obtenidos</h1>
 
         <div class="resultado">
-            <!-- Aquí el backend debe insertar dinámicamente los resultados -->
-            <p><strong>Estimación a las <span>{{hora_interp}}</span>:</strong> {{valor_estimado}} mg/dL</p>
-            <p><strong>Predicción a las <span>{{hora_pred}}</span>:</strong> {{valor_predicho}} mg/dL</p>
+            <p>
+                <span class="label">Estimado (hora {{ hora_interp }}):</span>
+                {{ interpolado }}
+            </p>
+            <p>
+                <span class="label">Predicción (hora {{ hora_pred }}):</span>
+                {{ predicho }}
+            </p>
         </div>
 
-        <p class="explicacion">
-            La estimación se basa en los valores cercanos usando interpolación, mientras que la predicción calcula una tendencia futura basada en tus mediciones anteriores.
-        </p>
-
-        <a class="btn-volver" href="/">Volver al formulario</a>
+        <div class="volver">
+            <a href="/">← Volver al formulario</a>
+        </div>
     </div>
 </body>
 </html>
