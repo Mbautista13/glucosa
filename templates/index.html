@@ -22,8 +22,6 @@
             color: #333;
         }
         label {
-            display: inline-block;
-            margin: 10px 0 5px;
             font-weight: bold;
         }
         input[type="time"], input[type="number"] {
@@ -45,25 +43,7 @@
         .btn:hover {
             background-color: #2980b9;
         }
-        .quitar-btn {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            font-size: 12px;
-            cursor: pointer;
-            margin-left: 10px;
-            border-radius: 6px;
-        }
-        .quitar-btn:hover {
-            background-color: #c0392b;
-        }
         .bloque-datos {
-            margin-bottom: 20px;
-        }
-        .explicacion {
-            font-size: 14px;
-            color: #555;
             margin-bottom: 20px;
         }
         .dato-extra {
@@ -75,45 +55,26 @@
     <div class="container">
         <h1>Predicción de Glucosa</h1>
 
-        <p class="explicacion">
-            Ingresa al menos 3 mediciones de glucosa junto con la hora en que se tomaron 
-            (por ejemplo: <strong>06:00</strong>, <strong>08:30</strong>, <strong>10:00</strong>).<br>
-            Luego, indica una hora para estimar el valor y otra futura para 
-            predecir la tendencia.
-        </p>
-
         <form action="/procesar" method="post">
             <div id="datos" class="bloque-datos">
-                <div class="medicion">
+                <div>
                     <label>Hora:</label>
                     <input type="time" name="hora[]" required>
                     <label>Glucosa:</label>
                     <input type="number" step="1" name="glucosa[]" required>
-                </div>
-                <div class="medicion">
-                    <label>Hora:</label>
-                    <input type="time" name="hora[]" required>
-                    <label>Glucosa:</label>
-                    <input type="number" step="1" name="glucosa[]" required>
-                </div>
-                <div class="medicion">
-                    <label>Hora:</label>
-                    <input type="time" name="hora[]" required>
-                    <label>Glucosa:</label>
-                    <input type="number" step="1" name="glucosa[]" required>
+                    <button type="button" onclick="eliminarCampo(this)">❌</button>
                 </div>
             </div>
-
             <button type="button" class="btn" onclick="agregarCampo()">Agregar otra medición</button>
 
             <div class="dato-extra">
-                <label>Hora para estimar:</label><br>
-                <input type="time" name="hora_interp" required>
+                <label>Hora para estimar (opcional):</label><br>
+                <input type="time" name="hora_interp">
             </div>
 
             <div class="dato-extra">
-                <label>Hora para predecir:</label><br>
-                <input type="time" name="hora_pred" required>
+                <label>Hora para predecir (opcional):</label><br>
+                <input type="time" name="hora_pred">
             </div>
 
             <br>
@@ -124,27 +85,19 @@
     <script>
         function agregarCampo() {
             const div = document.createElement('div');
-            div.className = 'medicion';
             div.innerHTML = `
                 <label>Hora:</label>
                 <input type="time" name="hora[]" required>
                 <label>Glucosa:</label>
                 <input type="number" step="1" name="glucosa[]" required>
-                <button type="button" class="quitar-btn" onclick="this.parentElement.remove()">Quitar</button>
+                <button type="button" onclick="eliminarCampo(this)">❌</button>
             `;
             document.getElementById('datos').appendChild(div);
         }
 
-        // Validar mínimo 3 mediciones antes de enviar
-        document.querySelector('form').addEventListener('submit', function(event) {
-            const horas = document.getElementsByName('hora[]');
-            const glucosas = document.getElementsByName('glucosa[]');
-
-            if (horas.length < 3 || glucosas.length < 3) {
-                alert('Debes ingresar al menos 3 mediciones de glucosa.');
-                event.preventDefault();
-            }
-        });
+        function eliminarCampo(btn) {
+            btn.parentNode.remove();
+        }
     </script>
 </body>
 </html>
