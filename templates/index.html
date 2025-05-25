@@ -45,6 +45,19 @@
         .btn:hover {
             background-color: #2980b9;
         }
+        .quitar-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 10px;
+            border-radius: 6px;
+        }
+        .quitar-btn:hover {
+            background-color: #c0392b;
+        }
         .bloque-datos {
             margin-bottom: 20px;
         }
@@ -56,21 +69,6 @@
         .dato-extra {
             margin-top: 15px;
         }
-        .medicion {
-            margin-bottom: 10px;
-        }
-        .quitar-btn {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        .quitar-btn:hover {
-            background-color: #c0392b;
-        }
     </style>
 </head>
 <body>
@@ -80,8 +78,8 @@
         <p class="explicacion">
             Ingresa al menos 3 mediciones de glucosa junto con la hora en que se tomaron 
             (por ejemplo: <strong>06:00</strong>, <strong>08:30</strong>, <strong>10:00</strong>).<br>
-            Luego, indica una hora para <strong>estimar un valor</strong> y otra futura para 
-            <strong>predecir la tendencia</strong>.
+            Luego, indica una hora para estimar el valor y otra futura para 
+            predecir la tendencia.
         </p>
 
         <form action="/procesar" method="post">
@@ -92,7 +90,20 @@
                     <label>Glucosa:</label>
                     <input type="number" step="1" name="glucosa[]" required>
                 </div>
+                <div class="medicion">
+                    <label>Hora:</label>
+                    <input type="time" name="hora[]" required>
+                    <label>Glucosa:</label>
+                    <input type="number" step="1" name="glucosa[]" required>
+                </div>
+                <div class="medicion">
+                    <label>Hora:</label>
+                    <input type="time" name="hora[]" required>
+                    <label>Glucosa:</label>
+                    <input type="number" step="1" name="glucosa[]" required>
+                </div>
             </div>
+
             <button type="button" class="btn" onclick="agregarCampo()">Agregar otra medición</button>
 
             <div class="dato-extra">
@@ -123,6 +134,17 @@
             `;
             document.getElementById('datos').appendChild(div);
         }
+
+        // Validar mínimo 3 mediciones antes de enviar
+        document.querySelector('form').addEventListener('submit', function(event) {
+            const horas = document.getElementsByName('hora[]');
+            const glucosas = document.getElementsByName('glucosa[]');
+
+            if (horas.length < 3 || glucosas.length < 3) {
+                alert('Debes ingresar al menos 3 mediciones de glucosa.');
+                event.preventDefault();
+            }
+        });
     </script>
 </body>
 </html>
